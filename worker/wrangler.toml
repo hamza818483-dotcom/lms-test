@@ -1,0 +1,8 @@
+name = "lms-test-api"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lms-test-db"
+database_id = "6a09904c-7a78-402b-9ad3-bd767d8dbfe3"
