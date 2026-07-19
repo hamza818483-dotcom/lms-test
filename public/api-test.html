@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>D1 API Test</title></head>
+<body style="font-family:sans-serif;padding:20px;">
+  <h2>D1 Worker API Test</h2>
+  <button onclick="testSignup()" style="padding:10px;font-size:16px;">Test Signup</button>
+  <button onclick="testLogin()" style="padding:10px;font-size:16px;">Test Login</button>
+  <pre id="result" style="background:#eee;padding:10px;margin-top:20px;white-space:pre-wrap;"></pre>
+  <script>
+    const API = "https://lms-test-api.hamza818483.workers.dev";
+    async function testSignup() {
+      const r = await fetch(API + "/auth/signup", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({email: "workertest@gmail.com", password: "test1234", full_name: "Worker Test", phone: "01711111111"})
+      });
+      document.getElementById("result").textContent = JSON.stringify(await r.json(), null, 2);
+    }
+    async function testLogin() {
+      const r = await fetch(API + "/auth/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({identifier: "workertest@gmail.com", password: "test1234"})
+      });
+      document.getElementById("result").textContent = JSON.stringify(await r.json(), null, 2);
+    }
+  </script>
+</body>
+</html>
