@@ -63,6 +63,20 @@ export default {
       return json({ user, profile, role: roleRow ? roleRow.role : "user" });
     }
 
+    if (path === "/db/select" && request.method === "POST") {
+      const { table, columns, where } = await request.json();
+      const allowedTables = ["profiles", "courses", "exams", "classes", "enrollments", "user_roles", "reviews", "announcements"];
+      if (!allowedTables.includes(table)) return json({ error: "Table not allowed" }, 400);
+      let sql = `SELECT ${columns || "*"} FROM ${table}`;
+      const params = [];
+      if (where) {
+        const clauses = Object.entries(where).map(([k, v]) => { params.push(v); return `${k} = ?`; });
+        if (clauses.length) sql += " WHERE " + clauses.join(" AND ");
+      }
+      const { results } = await env.DB.prepare(sql).bind(...params).all();
+      return json({ data: results });
+    }
+
     return json({ error: "Not found" }, 404);
   },
 };
