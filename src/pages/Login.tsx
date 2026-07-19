@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,17 +40,9 @@ const Login = () => {
     const identifier = formData.get("identifier") as string; // Changed from registrationId to identifier
     const password = formData.get("password") as string;
 
-    let email = identifier;
+    // login proceeds with raw identifier
 
-    // Legacy Support: Check if input looks like a phone number (digits only, length check)
-    // If it's a phone number, convert to synthetic email
-    const isPhone = /^\d+$/.test(identifier) || (identifier.startsWith('+') && /^\+?\d+$/.test(identifier));
-
-    if (isPhone && !identifier.includes('@')) {
-      email = `${identifier}@beshijoss.com`;
-    }
-
-    const { error } = await signIn(email, password, captchaToken);
+    const { error } = await signIn(identifier, password, captchaToken);
 
     if (error) {
       toast({
@@ -61,18 +52,7 @@ const Login = () => {
       });
       setLoading(false);
     } else {
-      // Fetch user roles quickly to decide redirect
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      if (profileData && (profileData.role === 'admin' || profileData.role === 'teacher')) {
-        navigate("/admin");
-      } else {
-        navigate("/dashboard");
-      }
+      navigate("/dashboard");
     }
   };
 

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, signUp } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -95,25 +94,8 @@ const Register = () => {
     }
 
     try {
-      // 0. Check if phone already exists
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("phone", phone)
-        .maybeSingle();
-
-      if (existingProfile) {
-        setDuplicatePhone(phone);
-        setLoading(false);
-        return;
-      }
-      // 1. Determine Auth Email Strategy
-      // If user provided a real email, use it. Otherwise, fallback to phone logic?
-      // Requirement: "Real Email" preferred. We make email mandatory in UI now.
-
       const email = emailInput.trim().toLowerCase();
 
-      // Check if email is valid format roughly
       if (!email || !email.includes('@')) {
         throw new Error("Please provide a valid email address.");
       }
@@ -124,56 +106,30 @@ const Register = () => {
         throw new Error("Only Gmail, Yahoo, Outlook, or Hotmail accounts are allowed.");
       }
 
-      // 2. Create the user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/login`,
-          captchaToken,
-          data: {
-            full_name: fullName,
-            father_name: fatherName,
-            mother_name: motherName,
-            hsc_batch: hscBatch,
-            college_name: collegeName,
-            ssc_gpa: sscGpa,
-            hsc_gpa: hscGpaForm,
-            phone: phone,
-            is_second_timer: isSecondTimer,
-          }
-        }
+        full_name: fullName,
+        phone: phone,
       });
 
       if (authError) {
+        if (authError.message?.toLowerCase().includes("exists")) {
+          setDuplicatePhone(phone);
+          setLoading(false);
+          return;
+        }
         throw authError;
       }
 
-      if (!authData.user) {
-        throw new Error("No user returned from sign up. Please check your email for verification.");
-      }
-
-      // Note: The public.profiles insertion is now handled safely by a database trigger (handle_new_user)
-      // which automatically runs when the user is created in Supabase Auth. This prevents issues when email verification is required.
-
-
       toast({
         title: "Registration successful",
-        description: "Account created! Redirecting...",
+        description: "Account created! Redirecting to login...",
       });
 
-      if (authData.session) {
-        navigate(location.state?.from || "/dashboard", { replace: true });
-      } else {
-        // If no session (email verification required)
-        toast({
-          title: "Check your email",
-          description: "We sent you a verification link. Please verify your email to login.",
-        });
-        setTimeout(() => {
-          navigate("/login", { state: { from: location.state?.from } });
-        }, 3000);
-      }
+      setTimeout(() => {
+        navigate("/login", { state: { from: location.state?.from } });
+      }, 1500);
 
     } catch (error: any) {
       console.error("Registration error:", error);
